@@ -1,0 +1,25 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# node-wjs addon binaries (https://github.com/nodejs/node-addon-api)
+node_modules
+.npm
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Vite
+dist/
+dist-ssr/
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
