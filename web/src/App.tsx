@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { Button, IconButton } from './ui'
+import copyIcon from './assets/Copy.svg'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <main className='flex min-h-screen items-center justify-center bg-gray-100 px-6 py-10'>
-      <section className='w-full max-w-md rounded-xl border border-gray-300 bg-white p-6 shadow-sm'>
-        <h1>Hello world</h1>
-      </section>
+      <Button disabled onClick={() => alert('Button clicked!')}>
+        Click me
+      </Button>
+      <IconButton
+        icon={copyIcon}
+        label='Icon Button'
+        onClick={() => alert('Icon Button clicked!')}
+      />
     </main>
   )
 }

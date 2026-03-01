@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-blue-base: #2c46b1;
@@ -17,10 +17,10 @@
 
 :root {
   font-family:
-    "Open Sans",
+    'Open Sans',
     system-ui,
     -apple-system,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
 }
 

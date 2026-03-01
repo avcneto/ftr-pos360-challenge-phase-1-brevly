@@ -1,0 +1,15 @@
+import type { IconButtonProps } from './entities'
+
+const IconButton = ({ icon, label, className, ...props }: IconButtonProps) => {
+  return (
+    <button
+      className={`flex h-8 w-[70px] flex-row items-center justify-center gap-1.5 rounded-[4px] bg-gray-200 px-2 text-sm-regular transition-colors hover:border hover:border-blue-base disabled:opacity-50 ${className}`}
+      {...props}
+    >
+      <img src={icon} alt={label} className='h-4 w-4' />
+      <span className='truncate'>{label}</span>
+    </button>
+  )
+}
+
+export { IconButton }
