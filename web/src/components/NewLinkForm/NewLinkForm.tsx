@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '../../ui'
+import warningIcon from '../../assets/Warning.svg'
 
 type NewLinkFormData = {
   originalLink: string
@@ -7,12 +9,16 @@ type NewLinkFormData = {
 }
 
 const NewLinkForm = () => {
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
+  const [originalLinkValue, setOriginalLinkValue] = useState('')
+  const [shortLinkValue, setShortLinkValue] = useState('')
+
   const {
     register,
     handleSubmit,
-    formState: { isValid },
+    formState: { errors },
   } = useForm<NewLinkFormData>({
-    mode: 'onChange',
+    mode: 'onSubmit',
     defaultValues: {
       originalLink: '',
       shortLink: '',
@@ -23,50 +29,101 @@ const NewLinkForm = () => {
     console.log('new-link-form', data)
   }
 
+  const hasFormErrors = Boolean(errors.originalLink || errors.shortLink)
+  const isSubmitDisabled =
+    hasUserInteracted &&
+    (!originalLinkValue?.trim() || !shortLinkValue?.trim())
+
   return (
-    <section className='w-full max-w-md rounded-2xl bg-gray-100 px-6 py-8 md:px-11 md:py-12 lg:max-w-[380px]'>
-      <h1 className='text-xi text-gray-600'>Novo link</h1>
+    <section
+      className={`flex w-full max-w-[380px] flex-col rounded-2xl bg-gray-100 p-8 ${hasFormErrors ? 'h-[400px]' : 'h-[340px]'}`}
+    >
+      <h1 className='text-lg-bold text-gray-600'>Novo link</h1>
 
       <form
-        className='mt-8 flex flex-col gap-7'
+        className='mt-6 flex min-h-0 flex-1 flex-col'
+        noValidate
         onSubmit={handleSubmit(onSubmit)}
       >
-        <div className='flex flex-col gap-3'>
-          <label
-            className='text-sm-semibold uppercase tracking-wide text-gray-500'
-            htmlFor='originalLink'
-          >
-            Link original
-          </label>
-          <input
-            id='originalLink'
-            type='url'
-            placeholder='www.exemplo.com.br'
-            className='h-14 w-full rounded-xl border border-gray-300 bg-gray-100 px-4 text-lg text-gray-400 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-base md:h-[68px] md:px-5 md:text-[38px] md:leading-[44px]'
-            {...register('originalLink', { required: true })}
-          />
-        </div>
+        <div className='flex flex-col gap-6'>
+          <div className='flex flex-col gap-3'>
+            <label
+              className='text-xs-uppercase text-gray-500'
+              htmlFor='originalLink'
+            >
+              Link original
+            </label>
+            <input
+              id='originalLink'
+              type='url'
+              placeholder='www.exemplo.com.br'
+              className={`text-md-regular h-12 w-full rounded-[8px] bg-gray-100 px-4 text-gray-600 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-base ${errors.originalLink ? 'border border-danger' : 'border border-gray-300'}`}
+              {...register('originalLink', {
+                onChange: (event) => {
+                  setHasUserInteracted(true)
+                  setOriginalLinkValue(event.target.value)
+                },
+                required: 'Informe uma uri vållda.',
+                validate: (value) => {
+                  try {
+                    const normalizedValue = value.startsWith('http://') || value.startsWith('https://')
+                      ? value
+                      : `https://${value}`
+                    new URL(normalizedValue)
+                    return true
+                  } catch {
+                    return 'Informe uma uri vållda.'
+                  }
+                },
+              })}
+            />
+            {errors.originalLink && (
+              <p className='text-sm-regular flex items-center gap-2 text-danger'>
+                <img src={warningIcon} alt='' aria-hidden='true' className='h-4 w-4' />
+                {errors.originalLink.message}
+              </p>
+            )}
+          </div>
 
-        <div className='flex flex-col gap-3'>
-          <label
-            className='text-sm-semibold uppercase tracking-wide text-gray-500'
-            htmlFor='shortLink'
-          >
-            Link encurtado
-          </label>
-          <input
-            id='shortLink'
-            type='text'
-            placeholder='brev.ly/'
-            className='h-14 w-full rounded-xl border border-gray-300 bg-gray-100 px-4 text-lg text-gray-400 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-base md:h-[68px] md:px-5 md:text-[38px] md:leading-[44px]'
-            {...register('shortLink', { required: true })}
-          />
+          <div className='flex flex-col gap-3'>
+            <label
+              className='text-xs-uppercase text-gray-500'
+              htmlFor='shortLink'
+            >
+              Link encurtado
+            </label>
+            <input
+              id='shortLink'
+              type='text'
+              placeholder='brev.ly/'
+              className={`text-md-regular h-12 w-full rounded-[8px] bg-gray-100 px-4 text-gray-600 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-base ${errors.shortLink ? 'border border-danger' : 'border border-gray-300'}`}
+              {...register('shortLink', {
+                onChange: (event) => {
+                  setHasUserInteracted(true)
+                  setShortLinkValue(event.target.value)
+                },
+                required:
+                  'Informe uma uri minúscula e sem espaço/caracter especial.',
+                pattern: {
+                  value: /^[a-z0-9-]+$/,
+                  message:
+                    'Informe uma uri minúscula e sem espaço/caracter especial.',
+                },
+              })}
+            />
+            {errors.shortLink && (
+              <p className='text-sm-regular flex items-center gap-2 text-danger'>
+                <img src={warningIcon} alt='' aria-hidden='true' className='h-4 w-4' />
+                {errors.shortLink.message}
+              </p>
+            )}
+          </div>
         </div>
 
         <Button
-          className='mt-2 h-12 w-full text-md-semibold md:h-[68px] md:text-lg-bold'
-          disabled={!isValid}
+          className='mt-auto h-12 w-full text-md-semibold'
           type='submit'
+          disabled={isSubmitDisabled}
         >
           Salvar link
         </Button>

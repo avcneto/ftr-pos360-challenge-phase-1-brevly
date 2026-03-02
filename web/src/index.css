@@ -54,6 +54,13 @@ body {
     text-transform: none;
   }
 
+  .text-md-regular {
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 400;
+    text-transform: none;
+  }
+
   .text-sm-regular {
     font-size: 12px;
     line-height: 16px;
