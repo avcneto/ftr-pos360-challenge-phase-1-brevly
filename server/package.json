@@ -7,12 +7,12 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch --env-file .env src/infra/http/server",
+    "dev": "tsx watch src/infra/http/server",
     "build": "tsup-node",
     "test": "dotenv -e .env.test -- vitest",
     "test:watch": "dotenv -e .env.test -- vitest --watch",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file .env src/infra/db/migrate.ts",
+    "db:migrate": "tsx src/infra/db/migrate.ts",
     "db:migrate:test": "tsx --env-file .env.test src/infra/db/migrate.ts",
     "pretest": "npm run db:migrate:test"
   },
