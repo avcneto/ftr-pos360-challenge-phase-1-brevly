@@ -21,54 +21,34 @@ const SECOND_SHORT_URL = 'rocketseat'
 const SHORT_URL_NOT_FOUND = 'not-found'
 
 const {
-  mockReturning,
-  mockValues,
-  mockInsert,
-  mockUpdate,
-  mockUpdateSet,
-  mockUpdateWhere,
-  mockUpdateReturning,
-  mockDelete,
-  mockDeleteWhere,
-  mockDeleteReturning,
-  mockSelect,
-  mockSelectFrom,
+  mockFindByShortUrl,
+  mockListAll,
+  mockCreate,
+  mockIncrementAccessById,
+  mockDeleteById,
 } = vi.hoisted(() => {
-  const mockReturning = vi.fn()
-  const mockValues = vi.fn(() => ({ returning: mockReturning }))
-  const mockInsert = vi.fn(() => ({ values: mockValues }))
-  const mockUpdateReturning = vi.fn()
-  const mockUpdateWhere = vi.fn(() => ({ returning: mockUpdateReturning }))
-  const mockUpdateSet = vi.fn(() => ({ where: mockUpdateWhere }))
-  const mockUpdate = vi.fn(() => ({ set: mockUpdateSet }))
-  const mockDeleteReturning = vi.fn()
-  const mockDeleteWhere = vi.fn(() => ({ returning: mockDeleteReturning }))
-  const mockDelete = vi.fn(() => ({ where: mockDeleteWhere }))
-  const mockSelectFrom = vi.fn()
-  const mockSelect = vi.fn(() => ({ from: mockSelectFrom }))
+  const mockFindByShortUrl = vi.fn()
+  const mockListAll = vi.fn()
+  const mockCreate = vi.fn()
+  const mockIncrementAccessById = vi.fn()
+  const mockDeleteById = vi.fn()
 
   return {
-    mockReturning,
-    mockValues,
-    mockInsert,
-    mockUpdate,
-    mockUpdateSet,
-    mockUpdateWhere,
-    mockUpdateReturning,
-    mockDelete,
-    mockDeleteWhere,
-    mockDeleteReturning,
-    mockSelect,
-    mockSelectFrom,
+    mockFindByShortUrl,
+    mockListAll,
+    mockCreate,
+    mockIncrementAccessById,
+    mockDeleteById,
   }
 })
 
-vi.mock('../../db', () => ({
-  db: {
-    insert: mockInsert,
-    update: mockUpdate,
-    delete: mockDelete,
-    select: mockSelect,
+vi.mock('../../services/linkService', () => ({
+  linkService: {
+    findByShortUrl: mockFindByShortUrl,
+    listAll: mockListAll,
+    create: mockCreate,
+    incrementAccessById: mockIncrementAccessById,
+    deleteById: mockDeleteById,
   },
 }))
 
@@ -96,17 +76,15 @@ describe('create link router', () => {
   it('should create a link and return 201', async () => {
     const createdAt = new Date('2026-03-02T00:00:00.000Z')
 
-    mockSelectFrom.mockResolvedValueOnce([])
+    mockFindByShortUrl.mockResolvedValueOnce(undefined)
 
-    mockReturning.mockResolvedValueOnce([
-      {
-        id: 'id-1',
-        originalUrl: DEFAULT_ORIGINAL_URL,
-        shortUrl: DEFAULT_SHORT_URL,
-        accessCount: '0',
-        createdAt,
-      },
-    ])
+    mockCreate.mockResolvedValueOnce({
+      id: 'id-1',
+      originalUrl: DEFAULT_ORIGINAL_URL,
+      shortUrl: DEFAULT_SHORT_URL,
+      accessCount: '0',
+      createdAt,
+    })
 
     const response = await app.inject({
       method: 'POST',
@@ -118,10 +96,9 @@ describe('create link router', () => {
     })
 
     expect(response.statusCode).toBe(201)
-    expect(mockValues).toHaveBeenCalledWith({
+    expect(mockCreate).toHaveBeenCalledWith({
       originalUrl: DEFAULT_ORIGINAL_URL,
       shortUrl: DEFAULT_SHORT_URL,
-      accessCount: '0',
     })
 
     expect(response.json()).toEqual({
@@ -136,15 +113,13 @@ describe('create link router', () => {
   it('should return 409 when short url already exists', async () => {
     const createdAt = new Date('2026-03-02T00:00:00.000Z')
 
-    mockSelectFrom.mockResolvedValueOnce([
-      {
-        id: 'id-1',
-        originalUrl: DEFAULT_ORIGINAL_URL,
-        shortUrl: DEFAULT_SHORT_URL,
-        accessCount: '10',
-        createdAt,
-      },
-    ])
+    mockFindByShortUrl.mockResolvedValueOnce({
+      id: 'id-1',
+      originalUrl: DEFAULT_ORIGINAL_URL,
+      shortUrl: DEFAULT_SHORT_URL,
+      accessCount: '10',
+      createdAt,
+    })
 
     const response = await app.inject({
       method: 'POST',
@@ -157,7 +132,7 @@ describe('create link router', () => {
 
     expect(response.statusCode).toBe(409)
     expect(response.json()).toEqual({ message: SHORT_URL_ALREADY_EXISTS_MESSAGE })
-    expect(mockInsert).not.toHaveBeenCalled()
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 
   it('should return 400 when short url is invalid', async () => {
@@ -174,22 +149,20 @@ describe('create link router', () => {
     expect(response.json().message).toContain('body/shortUrl')
     expect(response.json().message).toContain(SHORT_URL_VALIDATION_MESSAGE)
     expect(response.body).toContain(SHORT_URL_VALIDATION_MESSAGE)
-    expect(mockSelectFrom).not.toHaveBeenCalled()
-    expect(mockInsert).not.toHaveBeenCalled()
+    expect(mockFindByShortUrl).not.toHaveBeenCalled()
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 
   it('should return original url by short url and return 200', async () => {
     const createdAt = new Date('2026-03-02T00:00:00.000Z')
 
-    mockSelectFrom.mockResolvedValueOnce([
-      {
-        id: 'id-1',
-        originalUrl: DEFAULT_ORIGINAL_URL,
-        shortUrl: DEFAULT_SHORT_URL,
-        accessCount: '10',
-        createdAt,
-      },
-    ])
+    mockFindByShortUrl.mockResolvedValueOnce({
+      id: 'id-1',
+      originalUrl: DEFAULT_ORIGINAL_URL,
+      shortUrl: DEFAULT_SHORT_URL,
+      accessCount: '10',
+      createdAt,
+    })
 
     const response = await app.inject({
       method: 'GET',
@@ -198,12 +171,13 @@ describe('create link router', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({
+      id: 'id-1',
       originalUrl: DEFAULT_ORIGINAL_URL,
     })
   })
 
   it('should return 404 when short url does not exist', async () => {
-    mockSelectFrom.mockResolvedValueOnce([])
+    mockFindByShortUrl.mockResolvedValueOnce(undefined)
 
     const response = await app.inject({
       method: 'GET',
@@ -217,7 +191,7 @@ describe('create link router', () => {
   it('should list all links and return 200', async () => {
     const createdAt = new Date('2026-03-02T00:00:00.000Z')
 
-    mockSelectFrom.mockResolvedValueOnce([
+    mockListAll.mockResolvedValueOnce([
       {
         id: 'id-1',
         originalUrl: DEFAULT_ORIGINAL_URL,
@@ -259,7 +233,7 @@ describe('create link router', () => {
   })
 
   it('should return an empty array when there are no links', async () => {
-    mockSelectFrom.mockResolvedValueOnce([])
+    mockListAll.mockResolvedValueOnce([])
 
     const response = await app.inject({
       method: 'GET',
@@ -273,7 +247,7 @@ describe('create link router', () => {
   it('should export links as csv', async () => {
     const createdAt = new Date('2026-03-02T00:00:00.000Z')
 
-    mockSelectFrom.mockResolvedValueOnce([
+    mockListAll.mockResolvedValueOnce([
       {
         id: 'id-1',
         originalUrl: DEFAULT_ORIGINAL_URL,
@@ -302,15 +276,13 @@ describe('create link router', () => {
   it('should increment access count by id and return 200', async () => {
     const createdAt = new Date('2026-03-02T00:00:00.000Z')
 
-    mockUpdateReturning.mockResolvedValueOnce([
-      {
-        id: 'id-1',
-        originalUrl: DEFAULT_ORIGINAL_URL,
-        shortUrl: DEFAULT_SHORT_URL,
-        accessCount: '31',
-        createdAt,
-      },
-    ])
+    mockIncrementAccessById.mockResolvedValueOnce({
+      id: 'id-1',
+      originalUrl: DEFAULT_ORIGINAL_URL,
+      shortUrl: DEFAULT_SHORT_URL,
+      accessCount: '31',
+      createdAt,
+    })
 
     const response = await app.inject({
       method: 'PATCH',
@@ -318,8 +290,7 @@ describe('create link router', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(mockUpdateSet).toHaveBeenCalledTimes(1)
-    expect(mockUpdateWhere).toHaveBeenCalledTimes(1)
+    expect(mockIncrementAccessById).toHaveBeenCalledTimes(1)
     expect(response.json()).toEqual({
       id: 'id-1',
       originalUrl: DEFAULT_ORIGINAL_URL,
@@ -330,7 +301,7 @@ describe('create link router', () => {
   })
 
   it('should return 404 when link does not exist while incrementing access', async () => {
-    mockUpdateReturning.mockResolvedValueOnce([])
+    mockIncrementAccessById.mockResolvedValueOnce(undefined)
 
     const response = await app.inject({
       method: 'PATCH',
@@ -342,7 +313,7 @@ describe('create link router', () => {
   })
 
   it('should delete a link by id and return 200', async () => {
-    mockDeleteReturning.mockResolvedValueOnce([{ id: 'id-1' }])
+    mockDeleteById.mockResolvedValueOnce(true)
 
     const response = await app.inject({
       method: 'DELETE',
@@ -350,12 +321,12 @@ describe('create link router', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(mockDeleteWhere).toHaveBeenCalledTimes(1)
+    expect(mockDeleteById).toHaveBeenCalledTimes(1)
     expect(response.json()).toEqual({ message: LINK_DELETED_SUCCESSFULLY_MESSAGE })
   })
 
   it('should return 404 when deleting a non-existent link', async () => {
-    mockDeleteReturning.mockResolvedValueOnce([])
+    mockDeleteById.mockResolvedValueOnce(false)
 
     const response = await app.inject({
       method: 'DELETE',

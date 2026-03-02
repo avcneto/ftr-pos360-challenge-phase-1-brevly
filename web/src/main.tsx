@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 import { NotFound } from './pages/NotFound.tsx'
+import { Redirecting } from './pages/Redirecting.tsx'
 
 const queryClient = new QueryClient()
 
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path='/' element={<App />} />
           <Route path='/not-found' element={<NotFound />} />
+          <Route path='/:shortUrl' element={<Redirecting />} />
           <Route path='*' element={<Navigate to='/not-found' replace />} />
         </Routes>
       </BrowserRouter>

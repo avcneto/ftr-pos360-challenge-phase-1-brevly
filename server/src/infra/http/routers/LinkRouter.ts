@@ -1,10 +1,8 @@
 import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { eq, sql } from 'drizzle-orm'
 import { stringify } from 'csv-stringify/sync'
 import z from 'zod'
 
-import { db } from '../../db'
-import { link } from '../../db/schemas/link'
+import { linkService } from '../../services/linkService'
 import {
   EXAMPLE_CREATED_AT,
   EXAMPLE_LINK_ID,
@@ -23,7 +21,6 @@ const linkIdParamSchema = z.object({
 
 const LinkBodySchema = z.object({
   originalUrl: z
-    .string()
     .url()
     .describe(`Full original URL. Example: ${EXAMPLE_ORIGINAL_URL}`),
   shortUrl: z
@@ -65,9 +62,11 @@ const messageResponseSchema = z.object({
 })
 
 const originalUrlResponseSchema = z.object({
+  id: z.string(),
   originalUrl: z.string().url(),
 }).meta({
   example: {
+    id: EXAMPLE_LINK_ID,
     originalUrl: EXAMPLE_ORIGINAL_URL,
   },
 })
@@ -90,14 +89,16 @@ export const linkRouter: FastifyPluginAsyncZod = async (server) => {
     async (request, reply) => {
       const { shortUrl } = request.query
 
-      const links = await db.select().from(link)
-      const foundLink = links.find((item) => item.shortUrl === shortUrl)
+      const foundLink = await linkService.findByShortUrl(shortUrl)
 
       if (!foundLink) {
         return reply.status(404).send({ message: LINK_NOT_FOUND_MESSAGE })
       }
 
-      return reply.status(200).send({ originalUrl: foundLink.originalUrl })
+      return reply.status(200).send({
+        id: foundLink.id,
+        originalUrl: foundLink.originalUrl,
+      })
     }
   )
 
@@ -124,7 +125,7 @@ export const linkRouter: FastifyPluginAsyncZod = async (server) => {
       },
     },
     async (_request, reply) => {
-      const links = await db.select().from(link)
+      const links = await linkService.listAll()
 
       return reply.status(200).send(links)
     }
@@ -148,7 +149,7 @@ export const linkRouter: FastifyPluginAsyncZod = async (server) => {
       },
     },
     async (_request, reply) => {
-      const links = await db.select().from(link)
+      const links = await linkService.listAll()
 
       const records = links.map((item) => ({
         id: item.id,
@@ -194,21 +195,13 @@ export const linkRouter: FastifyPluginAsyncZod = async (server) => {
     async (request, reply) => {
       const { originalUrl, shortUrl } = request.body
 
-      const links = await db.select().from(link)
-      const shortUrlAlreadyExists = links.some((item) => item.shortUrl === shortUrl)
+      const existingLink = await linkService.findByShortUrl(shortUrl)
 
-      if (shortUrlAlreadyExists) {
+      if (existingLink) {
         return reply.status(409).send({ message: SHORT_URL_ALREADY_EXISTS_MESSAGE })
       }
 
-      const [createdLink] = await db
-        .insert(link)
-        .values({
-          originalUrl,
-          shortUrl,
-          accessCount: '0',
-        })
-        .returning()
+      const createdLink = await linkService.create({ originalUrl, shortUrl })
 
       return reply.status(201).send(createdLink)
     }
@@ -231,13 +224,7 @@ export const linkRouter: FastifyPluginAsyncZod = async (server) => {
     async (request, reply) => {
       const { id } = request.params
 
-      const [updatedLink] = await db
-        .update(link)
-        .set({
-          accessCount: sql`((${link.accessCount})::int + 1)::text`,
-        })
-        .where(eq(link.id, id))
-        .returning()
+      const updatedLink = await linkService.incrementAccessById(id)
 
       if (!updatedLink) {
         return reply.status(404).send({ message: LINK_NOT_FOUND_MESSAGE })
@@ -270,12 +257,9 @@ export const linkRouter: FastifyPluginAsyncZod = async (server) => {
     async (request, reply) => {
       const { id } = request.params
 
-      const deletedLinks = await db
-        .delete(link)
-        .where(eq(link.id, id))
-        .returning({ id: link.id })
+      const wasDeleted = await linkService.deleteById(id)
 
-      if (deletedLinks.length === 0) {
+      if (!wasDeleted) {
         return reply.status(404).send({ message: LINK_NOT_FOUND_MESSAGE })
       }
 

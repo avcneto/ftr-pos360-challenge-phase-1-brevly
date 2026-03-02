@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
+import { RequestBanner } from '../RequestBanner'
+import { useCreateLinkMutation } from '../../hooks/useCreateLinkMutation'
 import { Button } from '../../ui'
 import warningIcon from '../../assets/Warning.svg'
 import {
+  CREATE_LINK_ERROR_MESSAGE,
+  CREATE_LINK_LOADING_MESSAGE,
+  CREATE_LINK_SUCCESS_MESSAGE,
   INVALID_ORIGINAL_LINK_MESSAGE,
   INVALID_SHORT_LINK_MESSAGE,
   NEW_LINK_TITLE,
@@ -16,6 +22,24 @@ type NewLinkFormData = {
   shortLink: string
 }
 
+type CreateLinkRequest = {
+  originalUrl: string
+  shortUrl: string
+}
+
+type CreateLinkResponse = {
+  id: string
+  originalUrl: string
+  shortUrl: string
+  accessCount: string
+  createdAt: string
+}
+
+type BannerState = {
+  type: 'success' | 'error'
+  message: string
+}
+
 const normalizeUrl = (value: string) => {
   if (value.startsWith('http://') || value.startsWith('https://')) {
     return value
@@ -24,14 +48,22 @@ const normalizeUrl = (value: string) => {
   return `https://${value}`
 }
 
+const hasValidWebsitePattern = (hostname: string) => {
+  return /^www\.[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(hostname)
+}
+
 const NewLinkForm = () => {
+  const queryClient = useQueryClient()
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const [originalLinkValue, setOriginalLinkValue] = useState('')
   const [shortLinkValue, setShortLinkValue] = useState('')
+  const [banner, setBanner] = useState<BannerState | null>(null)
+  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<NewLinkFormData>({
     mode: 'onSubmit',
@@ -41,8 +73,52 @@ const NewLinkForm = () => {
     },
   })
 
+  const showBanner = (type: BannerState['type'], message: string) => {
+    setBanner({ type, message })
+
+    if (bannerTimeoutRef.current) {
+      clearTimeout(bannerTimeoutRef.current)
+    }
+
+    bannerTimeoutRef.current = setTimeout(() => {
+      setBanner(null)
+    }, 3000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (bannerTimeoutRef.current) {
+        clearTimeout(bannerTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const {
+    mutate,
+    isPending,
+    reset: resetMutation,
+  } = useCreateLinkMutation<CreateLinkRequest, CreateLinkResponse>('/links', {
+    onSuccess: async () => {
+      reset()
+      setHasUserInteracted(false)
+      setOriginalLinkValue('')
+      setShortLinkValue('')
+
+      await queryClient.invalidateQueries({ queryKey: ['links'] })
+      showBanner('success', CREATE_LINK_SUCCESS_MESSAGE)
+    },
+    onError: (error) => {
+      showBanner('error', error.message || CREATE_LINK_ERROR_MESSAGE)
+    },
+  })
+
   const onSubmit = (data: NewLinkFormData) => {
-    console.log('new-link-form', data)
+    resetMutation()
+
+    mutate({
+      originalUrl: normalizeUrl(data.originalLink),
+      shortUrl: data.shortLink,
+    })
   }
 
   const hasFormErrors = Boolean(errors.originalLink || errors.shortLink)
@@ -55,9 +131,10 @@ const NewLinkForm = () => {
       className={`flex w-full max-w-[380px] flex-col rounded-2xl bg-gray-100 p-8 ${hasFormErrors ? 'h-[400px]' : 'h-[340px]'}`}
     >
       <h1 className='text-lg-bold text-gray-600'>{NEW_LINK_TITLE}</h1>
+      {banner && <RequestBanner type={banner.type} message={banner.message} />}
 
       <form
-        className='mt-6 flex min-h-0 flex-1 flex-col'
+        className='mt-6 flex min-h-0 flex-1 flex-col gap-4'
         noValidate
         onSubmit={handleSubmit(onSubmit)}
       >
@@ -83,7 +160,14 @@ const NewLinkForm = () => {
                 validate: (value) => {
                   try {
                     const normalizedValue = normalizeUrl(value)
-                    new URL(normalizedValue)
+
+                    const url = new URL(normalizedValue)
+                    const isValidPattern = hasValidWebsitePattern(url.hostname)
+
+                    if (!isValidPattern) {
+                      return INVALID_ORIGINAL_LINK_MESSAGE
+                    }
+
                     return true
                   } catch {
                     return INVALID_ORIGINAL_LINK_MESSAGE
@@ -135,9 +219,19 @@ const NewLinkForm = () => {
         <Button
           className='mt-auto h-12 w-full text-md-semibold'
           type='submit'
-          disabled={isSubmitDisabled}
+          disabled={isSubmitDisabled || isPending}
         >
-          {SAVE_LINK_BUTTON_LABEL}
+          {isPending ? (
+            <span className='flex items-center gap-2'>
+              <span
+                className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent'
+                aria-hidden='true'
+              />
+              {CREATE_LINK_LOADING_MESSAGE}
+            </span>
+          ) : (
+            SAVE_LINK_BUTTON_LABEL
+          )}
         </Button>
       </form>
     </section>

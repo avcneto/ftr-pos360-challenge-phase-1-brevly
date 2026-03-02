@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  CREATE_LINK_LOADING_MESSAGE,
   INVALID_ORIGINAL_LINK_MESSAGE,
   INVALID_SHORT_LINK_MESSAGE,
   NEW_LINK_TITLE,
@@ -27,8 +28,31 @@ const { registerMock, handleSubmitMock, useFormMock } = vi.hoisted(() => ({
   useFormMock: vi.fn(),
 }))
 
+const { mutateMock, useCreateLinkMutationMock } = vi.hoisted(() => ({
+  mutateMock: vi.fn(),
+  useCreateLinkMutationMock: vi.fn(),
+}))
+
+const { invalidateQueriesMock } = vi.hoisted(() => ({
+  invalidateQueriesMock: vi.fn(),
+}))
+
+const { resetMutationMock } = vi.hoisted(() => ({
+  resetMutationMock: vi.fn(),
+}))
+
 vi.mock('react-hook-form', () => ({
   useForm: useFormMock,
+}))
+
+vi.mock('../../hooks/useCreateLinkMutation', () => ({
+  useCreateLinkMutation: useCreateLinkMutationMock,
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({
+    invalidateQueries: invalidateQueriesMock,
+  }),
 }))
 
 const createUseFormReturn = (
@@ -39,6 +63,7 @@ const createUseFormReturn = (
 ) => ({
   register: registerMock,
   handleSubmit: handleSubmitMock,
+  reset: vi.fn(),
   formState: { errors },
 })
 
@@ -47,12 +72,21 @@ describe('NewLinkForm', () => {
     registerMock.mockReset()
     handleSubmitMock.mockReset()
     useFormMock.mockReset()
+    mutateMock.mockReset()
+    useCreateLinkMutationMock.mockReset()
+    invalidateQueriesMock.mockReset()
+    resetMutationMock.mockReset()
 
     registerMock.mockImplementation(() => ({}))
     handleSubmitMock.mockImplementation((onSubmit: (data: NewLinkFormData) => void) => {
       return () => onSubmit({ originalLink: 'https://example.com', shortLink: 'example' })
     })
     useFormMock.mockReturnValue(createUseFormReturn())
+    useCreateLinkMutationMock.mockReturnValue({
+      mutate: mutateMock,
+      isPending: false,
+      reset: resetMutationMock,
+    })
   })
 
   it('should render form labels, placeholders and enabled submit button', () => {
@@ -94,7 +128,12 @@ describe('NewLinkForm', () => {
 
     const options = originalLinkRegister?.[1] as RegisterOptions
     expect(options.validate?.('www.google.com')).toBe(true)
+    expect(options.validate?.('www.google.com.br')).toBe(true)
+    expect(options.validate?.('www.google.es')).toBe(true)
     expect(options.validate?.('http://www.google.com')).toBe(true)
+    expect(options.validate?.('google.com')).toBe(INVALID_ORIGINAL_LINK_MESSAGE)
+    expect(options.validate?.('http://google.com')).toBe(INVALID_ORIGINAL_LINK_MESSAGE)
+    expect(options.validate?.('www.google')).toBe(INVALID_ORIGINAL_LINK_MESSAGE)
     expect(options.validate?.('://invalid')).toBe(INVALID_ORIGINAL_LINK_MESSAGE)
   })
 
@@ -122,7 +161,6 @@ describe('NewLinkForm', () => {
 
   it('should submit valid form data', () => {
     const payload = { originalLink: 'https://www.google.com', shortLink: 'google' }
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     handleSubmitMock.mockImplementationOnce((onSubmit: (data: NewLinkFormData) => void) => {
       onSubmit(payload)
@@ -131,7 +169,24 @@ describe('NewLinkForm', () => {
 
     renderToStaticMarkup(<NewLinkForm />)
 
-    expect(consoleLogSpy).toHaveBeenCalledWith('new-link-form', payload)
-    consoleLogSpy.mockRestore()
+    expect(resetMutationMock).toHaveBeenCalledTimes(1)
+    expect(mutateMock).toHaveBeenCalledWith({
+      originalUrl: payload.originalLink,
+      shortUrl: payload.shortLink,
+    })
+  })
+
+  it('should render loading while mutation is pending', () => {
+    useCreateLinkMutationMock.mockReturnValueOnce({
+      mutate: mutateMock,
+      isPending: true,
+      reset: resetMutationMock,
+    })
+
+    const html = renderToStaticMarkup(<NewLinkForm />)
+
+    expect(html).toContain(CREATE_LINK_LOADING_MESSAGE)
+    expect(html).toContain('disabled=""')
+    expect(html).not.toContain(SAVE_LINK_BUTTON_LABEL)
   })
 })

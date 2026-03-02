@@ -13,4 +13,14 @@ describe('IconButton', () => {
     expect(html).toContain('src="/download.svg"')
     expect(html).toContain('disabled')
   })
+
+  it('should render spinner when loading', () => {
+    const html = renderToStaticMarkup(
+      <IconButton icon='/download.svg' label='Carregando...' isLoading />
+    )
+
+    expect(html).toContain('Carregando...')
+    expect(html).toContain('animate-spin')
+    expect(html).not.toContain('src="/download.svg"')
+  })
 })
