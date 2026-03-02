@@ -6,6 +6,7 @@ export const SHORT_LINK_LABEL = 'Link encurtado'
 export const SAVE_LINK_BUTTON_LABEL = 'Salvar link'
 
 export const MY_LINKS_TITLE = 'Meus links'
+export const MY_LINKS_LOADING_LABEL = 'Carregando links...'
 export const DOWNLOAD_CSV_LABEL = 'Baixar CSV'
 export const DOWNLOAD_CSV_LOADING_LABEL = 'Carregando...'
 export const DELETE_LINK_CONFIRM_MESSAGE = 'Você realmente quer apagar?'

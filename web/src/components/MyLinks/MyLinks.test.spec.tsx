@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DOWNLOAD_CSV_LABEL,
   DOWNLOAD_CSV_LOADING_LABEL,
+  MY_LINKS_LOADING_LABEL,
   MY_LINKS_TITLE,
 } from '../../constants/texts'
 import { MyLinks } from './MyLinks'
@@ -49,6 +50,8 @@ describe('MyLinks', () => {
         },
       ],
       refetch: vi.fn(),
+      isLoading: false,
+      isFetching: false,
     })
 
     useDownloadLinksCsvQueryMock.mockReturnValue({
@@ -72,7 +75,12 @@ describe('MyLinks', () => {
   })
 
   it('should disable csv button when there are no links', () => {
-    useListLinksQueryMock.mockReturnValueOnce({ data: [], refetch: vi.fn() })
+    useListLinksQueryMock.mockReturnValueOnce({
+      data: [],
+      refetch: vi.fn(),
+      isLoading: false,
+      isFetching: false,
+    })
 
     const html = renderToStaticMarkup(<MyLinks />)
 
@@ -90,6 +98,20 @@ describe('MyLinks', () => {
 
     expect(html).toContain(DOWNLOAD_CSV_LOADING_LABEL)
     expect(html).not.toContain(DOWNLOAD_CSV_LABEL)
+    expect(html).toContain('animate-spin')
+  })
+
+  it('should render loading while links are being fetched', () => {
+    useListLinksQueryMock.mockReturnValueOnce({
+      data: [],
+      refetch: vi.fn(),
+      isLoading: true,
+      isFetching: false,
+    })
+
+    const html = renderToStaticMarkup(<MyLinks />)
+
+    expect(html).toContain(MY_LINKS_LOADING_LABEL)
     expect(html).toContain('animate-spin')
   })
 })

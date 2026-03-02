@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { IconButton } from '../../ui'
 import downloadIcon from '../../assets/DownloadSimple.svg'
+import { Loading } from '../Loading'
 import { RequestBanner } from '../RequestBanner'
 import { useDownloadLinksCsvQuery } from '../../hooks/useDownloadLinksCsvQuery'
 import { useDeleteLinkMutation } from '../../hooks/useDeleteLinkMutation'
@@ -17,6 +18,7 @@ import {
   DELETE_LINK_SUCCESS_MESSAGE,
   DOWNLOAD_CSV_LABEL,
   DOWNLOAD_CSV_LOADING_LABEL,
+  MY_LINKS_LOADING_LABEL,
   MY_LINKS_TITLE,
 } from '../../constants/texts'
 
@@ -29,7 +31,12 @@ const MyLinks = () => {
   const [linkIdToDelete, setLinkIdToDelete] = useState<string | null>(null)
   const [banner, setBanner] = useState<BannerState | null>(null)
   const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { data: links = [], refetch: refetchLinks } = useListLinksQuery()
+  const {
+    data: links = [],
+    refetch: refetchLinks,
+    isLoading: isLinksLoading,
+    isFetching: isLinksFetching,
+  } = useListLinksQuery()
   const { refetch, isFetching } = useDownloadLinksCsvQuery()
 
   const showBanner = (type: BannerState['type'], message: string) => {
@@ -139,6 +146,10 @@ const MyLinks = () => {
       <div className='mt-5 h-px w-full bg-gray-200' />
 
       <div className='mt-5 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-2 [scrollbar-gutter:stable]'>
+        {(isLinksLoading || isLinksFetching) && (
+          <Loading label={MY_LINKS_LOADING_LABEL} />
+        )}
+
         {links.map((item) => (
           <MyLinkItem
             key={item.id}
