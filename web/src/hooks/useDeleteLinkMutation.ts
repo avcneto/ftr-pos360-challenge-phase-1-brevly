@@ -1,9 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import type { UseMutationOptions } from '@tanstack/react-query'
-
-type DeleteLinkResponse = {
-  message: string
-}
+import type { DeleteLinkResponse } from '../types'
 
 type DeleteLinkMutationOptions = Omit<
   UseMutationOptions<DeleteLinkResponse, Error, string>,
@@ -17,9 +14,9 @@ export const useDeleteLinkMutation = (options?: DeleteLinkMutationOptions) => {
         method: 'DELETE',
       })
 
-      const responseData = await response
-        .json()
-        .catch(() => null) as { message?: string } | null
+      const responseData = (await response.json().catch(() => null)) as {
+        message?: string
+      } | null
 
       if (!response.ok) {
         throw new Error(responseData?.message ?? 'Erro ao excluir link.')

@@ -1,12 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-
-export type LinkItem = {
-  id: string
-  originalUrl: string
-  shortUrl: string
-  accessCount: string
-  createdAt: string
-}
+import type { Link } from '../types'
 
 export const useListLinksQuery = () => {
   return useQuery({
@@ -14,9 +7,10 @@ export const useListLinksQuery = () => {
     queryFn: async () => {
       const response = await fetch('/links')
 
-      const responseData = await response
-        .json()
-        .catch(() => null) as { message?: string } | LinkItem[] | null
+      const responseData = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | Link[]
+        | null
 
       if (!response.ok) {
         throw new Error(
@@ -25,7 +19,7 @@ export const useListLinksQuery = () => {
         )
       }
 
-      return (responseData ?? []) as LinkItem[]
+      return (responseData ?? []) as Link[]
     },
   })
 }

@@ -1,30 +1,30 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq, sql } from "drizzle-orm";
 
-import { db } from '../db'
-import { link } from '../db/schemas/link'
+import { db } from "../db";
+import { link } from "../db/schemas/link";
 
 type CreateLinkInput = {
-  originalUrl: string
-  shortUrl: string
-}
+  originalUrl: string;
+  shortUrl: string;
+};
 
 const findByShortUrl = async (shortUrl: string) => {
   const [foundLink] = await db
     .select()
     .from(link)
     .where(eq(link.shortUrl, shortUrl))
-    .limit(1)
+    .limit(1);
 
-  return foundLink
-}
+  return foundLink;
+};
 
 const listAll = async () => {
-  const links = await db.select().from(link)
+  const links = await db.select().from(link);
 
-  return links.sort((firstLink, secondLink) => {
-    return secondLink.createdAt.getTime() - firstLink.createdAt.getTime()
-  })
-}
+  return links.sort((a, b) => {
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+};
 
 const create = async ({ originalUrl, shortUrl }: CreateLinkInput) => {
   const [createdLink] = await db
@@ -32,12 +32,12 @@ const create = async ({ originalUrl, shortUrl }: CreateLinkInput) => {
     .values({
       originalUrl,
       shortUrl,
-      accessCount: '0',
+      accessCount: "0",
     })
-    .returning()
+    .returning();
 
-  return createdLink
-}
+  return createdLink;
+};
 
 const incrementAccessById = async (id: string) => {
   const [updatedLink] = await db
@@ -46,19 +46,19 @@ const incrementAccessById = async (id: string) => {
       accessCount: sql`((${link.accessCount})::int + 1)::text`,
     })
     .where(eq(link.id, id))
-    .returning()
+    .returning();
 
-  return updatedLink
-}
+  return updatedLink;
+};
 
 const deleteById = async (id: string) => {
   const deletedLinks = await db
     .delete(link)
     .where(eq(link.id, id))
-    .returning({ id: link.id })
+    .returning({ id: link.id });
 
-  return deletedLinks.length > 0
-}
+  return deletedLinks.length > 0;
+};
 
 export const linkService = {
   findByShortUrl,
@@ -66,4 +66,4 @@ export const linkService = {
   create,
   incrementAccessById,
   deleteById,
-}
+};

@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { RequestBanner } from '../RequestBanner'
 import { useCreateLinkMutation } from '../../hooks/useCreateLinkMutation'
+import { useBanner } from '../../hooks/useBanner'
 import { Button } from '../../ui'
+import { normalizeUrl, hasValidWebsitePattern } from '../../utils'
 import warningIcon from '../../assets/Warning.svg'
+import type { CreateLinkRequest, CreateLinkResponse } from '../../types'
 import {
   CREATE_LINK_ERROR_MESSAGE,
   CREATE_LINK_LOADING_MESSAGE,
@@ -22,43 +25,12 @@ type NewLinkFormData = {
   shortLink: string
 }
 
-type CreateLinkRequest = {
-  originalUrl: string
-  shortUrl: string
-}
-
-type CreateLinkResponse = {
-  id: string
-  originalUrl: string
-  shortUrl: string
-  accessCount: string
-  createdAt: string
-}
-
-type BannerState = {
-  type: 'success' | 'error'
-  message: string
-}
-
-const normalizeUrl = (value: string) => {
-  if (value.startsWith('http://') || value.startsWith('https://')) {
-    return value
-  }
-
-  return `https://${value}`
-}
-
-const hasValidWebsitePattern = (hostname: string) => {
-  return /^www\.[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(hostname)
-}
-
 const NewLinkForm = () => {
   const queryClient = useQueryClient()
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const [originalLinkValue, setOriginalLinkValue] = useState('')
   const [shortLinkValue, setShortLinkValue] = useState('')
-  const [banner, setBanner] = useState<BannerState | null>(null)
-  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { banner, showBanner } = useBanner()
 
   const {
     register,
@@ -72,26 +44,6 @@ const NewLinkForm = () => {
       shortLink: '',
     },
   })
-
-  const showBanner = (type: BannerState['type'], message: string) => {
-    setBanner({ type, message })
-
-    if (bannerTimeoutRef.current) {
-      clearTimeout(bannerTimeoutRef.current)
-    }
-
-    bannerTimeoutRef.current = setTimeout(() => {
-      setBanner(null)
-    }, 3000)
-  }
-
-  useEffect(() => {
-    return () => {
-      if (bannerTimeoutRef.current) {
-        clearTimeout(bannerTimeoutRef.current)
-      }
-    }
-  }, [])
 
   const {
     mutate,
@@ -112,7 +64,7 @@ const NewLinkForm = () => {
     },
   })
 
-  const onSubmit = (data: NewLinkFormData) => {
+  const submitForm = (data: NewLinkFormData) => {
     resetMutation()
 
     mutate({
@@ -123,8 +75,7 @@ const NewLinkForm = () => {
 
   const hasFormErrors = Boolean(errors.originalLink || errors.shortLink)
   const isSubmitDisabled =
-    hasUserInteracted &&
-    (!originalLinkValue?.trim() || !shortLinkValue?.trim())
+    hasUserInteracted && (!originalLinkValue?.trim() || !shortLinkValue?.trim())
 
   return (
     <section
@@ -136,7 +87,7 @@ const NewLinkForm = () => {
       <form
         className='mt-6 flex min-h-0 flex-1 flex-col gap-4'
         noValidate
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(submitForm)}
       >
         <div className='flex flex-col gap-6'>
           <div className='flex flex-col gap-3'>
@@ -177,7 +128,12 @@ const NewLinkForm = () => {
             />
             {errors.originalLink && (
               <p className='text-sm-regular flex items-center gap-2 text-danger'>
-                <img src={warningIcon} alt='' aria-hidden='true' className='h-4 w-4' />
+                <img
+                  src={warningIcon}
+                  alt=''
+                  aria-hidden='true'
+                  className='h-4 w-4'
+                />
                 {errors.originalLink.message}
               </p>
             )}
@@ -209,7 +165,12 @@ const NewLinkForm = () => {
             />
             {errors.shortLink && (
               <p className='text-sm-regular flex items-center gap-2 text-danger'>
-                <img src={warningIcon} alt='' aria-hidden='true' className='h-4 w-4' />
+                <img
+                  src={warningIcon}
+                  alt=''
+                  aria-hidden='true'
+                  className='h-4 w-4'
+                />
                 {errors.shortLink.message}
               </p>
             )}

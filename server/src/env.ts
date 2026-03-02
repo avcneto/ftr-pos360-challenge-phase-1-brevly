@@ -1,16 +1,22 @@
 import { z } from "zod";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, statSync } from "fs";
 import { resolve } from "path";
 
 const envPath = resolve(process.cwd(), ".env");
 const envExamplePath = resolve(process.cwd(), ".env.example");
-const fileToLoad = existsSync(envPath) ? envPath : envExamplePath;
 
-if (!existsSync(envPath) && existsSync(envExamplePath)) {
+// Check if files exist and are files (not directories)
+const envFileExists = existsSync(envPath) && statSync(envPath).isFile();
+const envExampleFileExists =
+  existsSync(envExamplePath) && statSync(envExamplePath).isFile();
+
+const fileToLoad = envFileExists ? envPath : envExamplePath;
+
+if (!envFileExists && envExampleFileExists) {
   console.log("📋 Using environment variables from .env.example");
 }
 
-if (existsSync(fileToLoad)) {
+if (envFileExists || envExampleFileExists) {
   const envContent = readFileSync(fileToLoad, "utf-8");
   envContent.split("\n").forEach((line) => {
     const trimmedLine = line.trim();

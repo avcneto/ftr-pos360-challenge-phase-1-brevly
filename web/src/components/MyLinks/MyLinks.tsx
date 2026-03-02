@@ -1,20 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { IconButton } from '../../ui'
 import downloadIcon from '../../assets/DownloadSimple.svg'
 import { Loading } from '../Loading'
 import { RequestBanner } from '../RequestBanner'
+import { DeleteConfirmationDialog } from '../DeleteConfirmationDialog'
 import { useDownloadLinksCsvQuery } from '../../hooks/useDownloadLinksCsvQuery'
 import { useDeleteLinkMutation } from '../../hooks/useDeleteLinkMutation'
 import { useListLinksQuery } from '../../hooks/useListLinksQuery'
+import { useBanner } from '../../hooks/useBanner'
+import { buildFullShortUrl, normalizeShortUrl } from '../../utils'
 import { MyLinkItem } from './MyLinkItem'
 import {
   COPY_LINK_ERROR_MESSAGE,
   COPY_LINK_SUCCESS_MESSAGE,
-  DELETE_LINK_CANCEL_BUTTON_LABEL,
-  DELETE_LINK_CONFIRM_BUTTON_LABEL,
   DELETE_LINK_ERROR_MESSAGE,
-  DELETE_LINK_CONFIRM_MESSAGE,
-  DELETE_LINK_LOADING_LABEL,
   DELETE_LINK_SUCCESS_MESSAGE,
   DOWNLOAD_CSV_LABEL,
   DOWNLOAD_CSV_LOADING_LABEL,
@@ -22,15 +21,9 @@ import {
   MY_LINKS_TITLE,
 } from '../../constants/texts'
 
-type BannerState = {
-  type: 'success' | 'error'
-  message: string
-}
-
 const MyLinks = () => {
   const [linkIdToDelete, setLinkIdToDelete] = useState<string | null>(null)
-  const [banner, setBanner] = useState<BannerState | null>(null)
-  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { banner, showBanner } = useBanner()
   const {
     data: links = [],
     refetch: refetchLinks,
@@ -38,26 +31,6 @@ const MyLinks = () => {
     isFetching: isLinksFetching,
   } = useListLinksQuery()
   const { refetch, isFetching } = useDownloadLinksCsvQuery()
-
-  const showBanner = (type: BannerState['type'], message: string) => {
-    setBanner({ type, message })
-
-    if (bannerTimeoutRef.current) {
-      clearTimeout(bannerTimeoutRef.current)
-    }
-
-    bannerTimeoutRef.current = setTimeout(() => {
-      setBanner(null)
-    }, 3000)
-  }
-
-  useEffect(() => {
-    return () => {
-      if (bannerTimeoutRef.current) {
-        clearTimeout(bannerTimeoutRef.current)
-      }
-    }
-  }, [])
 
   const { mutate: deleteLink, isPending: isDeleting } = useDeleteLinkMutation({
     onSuccess: async (data) => {
@@ -71,7 +44,7 @@ const MyLinks = () => {
     },
   })
 
-  const handleDownloadCsv = async () => {
+  const downloadLinksCsv = async () => {
     const result = await refetch()
 
     if (!result.data) {
@@ -89,17 +62,13 @@ const MyLinks = () => {
     URL.revokeObjectURL(url)
   }
 
-  const handleOpenDeleteConfirmation = (id: string) => {
+  const openDeleteDialog = (id: string) => {
     setLinkIdToDelete(id)
   }
 
-  const handleCopyShortUrl = async (shortUrl: string) => {
+  const copyShortUrlToClipboard = async (shortUrl: string) => {
     try {
-      const normalizedShortUrl = shortUrl.startsWith('/')
-        ? shortUrl.slice(1)
-        : shortUrl
-      const fullShortUrl = `${window.location.origin}/${normalizedShortUrl}`
-
+      const fullShortUrl = buildFullShortUrl(shortUrl)
       await navigator.clipboard.writeText(fullShortUrl)
       showBanner('success', COPY_LINK_SUCCESS_MESSAGE)
     } catch {
@@ -107,19 +76,16 @@ const MyLinks = () => {
     }
   }
 
-  const handleOpenShortUrl = (shortUrl: string) => {
-    const normalizedShortUrl = shortUrl.startsWith('/')
-      ? shortUrl.slice(1)
-      : shortUrl
-
-    window.open(`/${normalizedShortUrl}`, '_blank', 'noopener,noreferrer')
+  const openShortUrlInNewTab = (shortUrl: string) => {
+    const normalized = normalizeShortUrl(shortUrl)
+    window.open(`/${normalized}`, '_blank', 'noopener,noreferrer')
   }
 
-  const handleCancelDelete = () => {
+  const cancelDelete = () => {
     setLinkIdToDelete(null)
   }
 
-  const handleConfirmDelete = () => {
+  const confirmDelete = () => {
     if (!linkIdToDelete) {
       return
     }
@@ -138,7 +104,7 @@ const MyLinks = () => {
           label={isFetching ? DOWNLOAD_CSV_LOADING_LABEL : DOWNLOAD_CSV_LABEL}
           isLoading={isFetching}
           className='w-[144px] text-sm-semibold text-gray-400'
-          onClick={handleDownloadCsv}
+          onClick={downloadLinksCsv}
           disabled={isFetching || links.length === 0}
         />
       </div>
@@ -156,48 +122,19 @@ const MyLinks = () => {
             shortUrl={item.shortUrl}
             originalUrl={item.originalUrl}
             accessCount={Number(item.accessCount)}
-            onOpen={() => handleOpenShortUrl(item.shortUrl)}
-            onCopy={() => handleCopyShortUrl(item.shortUrl)}
-            onDelete={() => handleOpenDeleteConfirmation(item.id)}
+            onOpen={() => openShortUrlInNewTab(item.shortUrl)}
+            onCopy={() => copyShortUrlToClipboard(item.shortUrl)}
+            onDelete={() => openDeleteDialog(item.id)}
           />
         ))}
       </div>
 
       {linkIdToDelete && (
-        <div className='fixed bottom-6 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[460px] -translate-x-1/2 rounded-[8px] border border-gray-300 bg-gray-100 px-4 py-3'>
-          <p className='text-sm-regular text-gray-600'>
-            {DELETE_LINK_CONFIRM_MESSAGE}
-          </p>
-
-          <div className='mt-3 flex items-center justify-end gap-2'>
-            <button
-              type='button'
-              className='text-sm-semibold rounded-[6px] border border-gray-300 px-3 py-1.5 text-gray-600 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50'
-              onClick={handleCancelDelete}
-              disabled={isDeleting}
-            >
-              {DELETE_LINK_CANCEL_BUTTON_LABEL}
-            </button>
-            <button
-              type='button'
-              className='text-sm-semibold rounded-[6px] bg-danger px-3 py-1.5 text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <span className='flex items-center gap-2'>
-                  <span
-                    className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent'
-                    aria-hidden='true'
-                  />
-                  {DELETE_LINK_LOADING_LABEL}
-                </span>
-              ) : (
-                DELETE_LINK_CONFIRM_BUTTON_LABEL
-              )}
-            </button>
-          </div>
-        </div>
+        <DeleteConfirmationDialog
+          isDeleting={isDeleting}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
       )}
     </section>
   )
