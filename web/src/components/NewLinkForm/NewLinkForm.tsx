@@ -2,10 +2,26 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '../../ui'
 import warningIcon from '../../assets/Warning.svg'
+import {
+  INVALID_ORIGINAL_LINK_MESSAGE,
+  INVALID_SHORT_LINK_MESSAGE,
+  NEW_LINK_TITLE,
+  ORIGINAL_LINK_LABEL,
+  SAVE_LINK_BUTTON_LABEL,
+  SHORT_LINK_LABEL,
+} from '../../constants/texts'
 
 type NewLinkFormData = {
   originalLink: string
   shortLink: string
+}
+
+const normalizeUrl = (value: string) => {
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value
+  }
+
+  return `https://${value}`
 }
 
 const NewLinkForm = () => {
@@ -38,7 +54,7 @@ const NewLinkForm = () => {
     <section
       className={`flex w-full max-w-[380px] flex-col rounded-2xl bg-gray-100 p-8 ${hasFormErrors ? 'h-[400px]' : 'h-[340px]'}`}
     >
-      <h1 className='text-lg-bold text-gray-600'>Novo link</h1>
+      <h1 className='text-lg-bold text-gray-600'>{NEW_LINK_TITLE}</h1>
 
       <form
         className='mt-6 flex min-h-0 flex-1 flex-col'
@@ -51,7 +67,7 @@ const NewLinkForm = () => {
               className='text-xs-uppercase text-gray-500'
               htmlFor='originalLink'
             >
-              Link original
+              {ORIGINAL_LINK_LABEL}
             </label>
             <input
               id='originalLink'
@@ -63,16 +79,14 @@ const NewLinkForm = () => {
                   setHasUserInteracted(true)
                   setOriginalLinkValue(event.target.value)
                 },
-                required: 'Informe uma uri vållda.',
+                required: INVALID_ORIGINAL_LINK_MESSAGE,
                 validate: (value) => {
                   try {
-                    const normalizedValue = value.startsWith('http://') || value.startsWith('https://')
-                      ? value
-                      : `https://${value}`
+                    const normalizedValue = normalizeUrl(value)
                     new URL(normalizedValue)
                     return true
                   } catch {
-                    return 'Informe uma uri vållda.'
+                    return INVALID_ORIGINAL_LINK_MESSAGE
                   }
                 },
               })}
@@ -90,7 +104,7 @@ const NewLinkForm = () => {
               className='text-xs-uppercase text-gray-500'
               htmlFor='shortLink'
             >
-              Link encurtado
+              {SHORT_LINK_LABEL}
             </label>
             <input
               id='shortLink'
@@ -102,12 +116,10 @@ const NewLinkForm = () => {
                   setHasUserInteracted(true)
                   setShortLinkValue(event.target.value)
                 },
-                required:
-                  'Informe uma uri minúscula e sem espaço/caracter especial.',
+                required: INVALID_SHORT_LINK_MESSAGE,
                 pattern: {
                   value: /^[a-z0-9-]+$/,
-                  message:
-                    'Informe uma uri minúscula e sem espaço/caracter especial.',
+                  message: INVALID_SHORT_LINK_MESSAGE,
                 },
               })}
             />
@@ -125,7 +137,7 @@ const NewLinkForm = () => {
           type='submit'
           disabled={isSubmitDisabled}
         >
-          Salvar link
+          {SAVE_LINK_BUTTON_LABEL}
         </Button>
       </form>
     </section>

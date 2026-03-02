@@ -1,5 +1,6 @@
 import copyIcon from '../../assets/Copy.svg'
 import trashIcon from '../../assets/Trash.svg'
+import { ACCESSES_LABEL } from '../../constants/texts'
 
 type MyLinkItemProps = {
   shortUrl: string
@@ -24,7 +25,7 @@ const MyLinkItem = ({ shortUrl, originalUrl, accessCount }: MyLinkItemProps) => 
 
       <div className='flex items-center gap-4'>
         <p className='text-sm-regular h-[16px] w-[61px] text-right text-gray-500'>
-          {accessCount} acessos
+          {accessCount} {ACCESSES_LABEL}
         </p>
 
         <div className='flex items-center gap-2'>

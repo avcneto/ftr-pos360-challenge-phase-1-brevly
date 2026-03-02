@@ -1,0 +1,12 @@
+services:
+    pg:
+        image: postgres:18.3
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_USER: user_links
+            POSTGRES_PASSWORD: password_links
+            POSTGRES_DB: link
+
+        volumes:
+            - './docker:/docker-entrypoint-initdb.d'

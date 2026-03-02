@@ -5,11 +5,21 @@ import { fastifySwaggerUi } from '@fastify/swagger-ui'
 import { fastify } from 'fastify'
 import {
   hasZodFastifySchemaValidationErrors,
+  jsonSchemaTransform,
+  jsonSchemaTransformObject,
   serializerCompiler,
   validatorCompiler,
 } from 'fastify-type-provider-zod'
 
-
+import { env } from '@/env'
+import {
+  DEFAULT_CORS_ORIGIN,
+  DEFAULT_HTTP_HOST,
+  DOCS_ROUTE_PREFIX,
+  INTERNAL_SERVER_ERROR_MESSAGE,
+  VALIDATION_ERROR_MESSAGE,
+} from './http.constants'
+import { linkRouter } from './routers/LinkRouter'
 import { pingRouter } from './routers/pingRouter'
 
 const server = fastify()
@@ -17,26 +27,27 @@ const server = fastify()
 server.setValidatorCompiler(validatorCompiler)
 server.setSerializerCompiler(serializerCompiler)
 
-server.setErrorHandler((error, request, reply) => {
+server.setErrorHandler((error, _request, reply) => {
   if (hasZodFastifySchemaValidationErrors(error)) {
     return reply.status(400).send({
-      message: 'Validation error',
+      message: VALIDATION_ERROR_MESSAGE,
       issues: error.validation,
     })
   }
 
-  // send error to observability tool like Sentry, DataDog, NewRelic
   console.error(error)
 
   return reply.status(500).send({
-    message: 'Internal server error',
+    message: INTERNAL_SERVER_ERROR_MESSAGE,
   })
 })
 
 const start = async () => {
   await server.register(fastifyCors, {
-    origin: '*',
+    origin: DEFAULT_CORS_ORIGIN,
   })
+
+  await server.register(fastifyMultipart)
 
   await server.register(fastifySwagger, {
     openapi: {
@@ -45,16 +56,19 @@ const start = async () => {
         version: '1.0.0',
       },
     },
+    transform: jsonSchemaTransform,
+    transformObject: jsonSchemaTransformObject,
   })
 
   server.register(fastifySwaggerUi, {
-    routePrefix: '/docs',
+    routePrefix: DOCS_ROUTE_PREFIX,
   })
 
   server.register(pingRouter)
+  server.register(linkRouter)
 
-  await server.listen({ port: 3333, host: '0.0.0.0' })
-  console.log('HTTP server running on http://localhost:3333')
+  await server.listen({ port: env.PORT, host: DEFAULT_HTTP_HOST })
+  console.log(`HTTP server running on http://localhost:${env.PORT}`)
 }
 
 start().catch((error) => {

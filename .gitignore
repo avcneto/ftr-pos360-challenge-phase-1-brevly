@@ -18,6 +18,7 @@ node_modules
 # Vite
 dist/
 dist-ssr/
+coverage/
 
 # IDE
 .idea/

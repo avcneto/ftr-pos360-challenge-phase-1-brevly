@@ -1,3 +1,5 @@
+import { NOT_FOUND_DESCRIPTION, NOT_FOUND_TITLE } from '../constants/texts'
+
 const NotFound = () => {
   return (
     <main className='flex min-h-screen items-center justify-center bg-gray-300 px-4'>
@@ -5,12 +7,11 @@ const NotFound = () => {
         <img src='/404.svg' alt='404' className='h-[56px] w-[128px]' />
 
         <h1 className='text-xi flex h-auto w-full max-w-full items-center justify-center text-center text-gray-600 md:h-[32px] md:max-w-[484px]'>
-          Link não encontrado
+          {NOT_FOUND_TITLE}
         </h1>
 
         <p className='text-md-semibold flex h-auto w-full max-w-full items-center justify-center text-center text-gray-500 md:h-[36px] md:max-w-[484px]'>
-          O link que você está tentando acessar não existe, foi removido ou é
-          uma URL inválida. Saiba mais em brev.ly.
+          {NOT_FOUND_DESCRIPTION}
         </p>
       </section>
     </main>
