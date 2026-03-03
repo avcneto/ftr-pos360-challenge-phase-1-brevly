@@ -22,12 +22,20 @@ const linkIdParamSchema = z.object({
 const linkBodySchema = z.object({
   originalUrl: z
     .url()
-    .describe(`Full original URL. Example: ${EXAMPLE_ORIGINAL_URL}`),
+    .describe(
+      `Full original URL with protocol (http:// or https://). Example: ${EXAMPLE_ORIGINAL_URL}`,
+    )
+    .meta({
+      example: EXAMPLE_ORIGINAL_URL,
+    }),
   shortUrl: z
     .string()
     .min(1)
     .regex(/^[a-z0-9-]+$/, SHORT_URL_VALIDATION_MESSAGE)
-    .describe(`Short slug/URL. Example: ${EXAMPLE_SHORT_URL}`),
+    .describe(`Short slug/URL. Example: ${EXAMPLE_SHORT_URL}`)
+    .meta({
+      example: EXAMPLE_SHORT_URL,
+    }),
 });
 
 const originalUrlQuerySchema = z.object({
