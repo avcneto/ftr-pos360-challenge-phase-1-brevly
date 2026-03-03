@@ -18,6 +18,8 @@ A aplicação permite criar, gerenciar e monitorar links encurtados com recursos
 
 > 💜 **Design**: [Acesse o Figma do projeto](https://www.figma.com/community/file/1477335071553579816/encurtador-de-links)
 
+![Brevly - Versão Web](docs/image.png)
+
 ## 🚀 Tecnologias
 
 ### Backend
@@ -252,6 +254,9 @@ docker compose up -d
 #### 📚 Documentação Interativa
 
 Acesse a documentação completa e interativa (Swagger) em: **http://localhost:3333/docs**
+
+![Brevly UX Features](docs/image-2.png)
+
 
 ### Endpoints Disponíveis
 
