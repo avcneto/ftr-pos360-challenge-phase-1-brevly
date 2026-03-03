@@ -45,6 +45,9 @@ server.setErrorHandler((error, _request, reply) => {
 const startServer = async () => {
   await server.register(fastifyCors, {
     origin: DEFAULT_CORS_ORIGIN,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   });
 
   await server.register(fastifyMultipart);

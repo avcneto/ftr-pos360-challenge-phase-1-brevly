@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import type { UseMutationOptions } from '@tanstack/react-query'
+import { buildApiUrl } from '../utils'
 
 type CreateLinkMutationOptions<TResponse, TBody> = Omit<
   UseMutationOptions<TResponse, Error, TBody>,
@@ -12,9 +13,7 @@ export const useCreateLinkMutation = <TBody, TResponse>(
 ) => {
   return useMutation<TResponse, Error, TBody>({
     mutationFn: async (body) => {
-      const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-      const response = await fetch(normalizedPath, {
+      const response = await fetch(buildApiUrl(path), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,9 +21,9 @@ export const useCreateLinkMutation = <TBody, TResponse>(
         body: JSON.stringify(body),
       })
 
-      const responseData = await response
-        .json()
-        .catch(() => null) as { message?: string } | null
+      const responseData = (await response.json().catch(() => null)) as {
+        message?: string
+      } | null
 
       if (!response.ok) {
         throw new Error(responseData?.message ?? 'Erro ao salvar link.')

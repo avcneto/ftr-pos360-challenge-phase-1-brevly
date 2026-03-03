@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { IconButton } from '../../ui'
 import downloadIcon from '../../assets/DownloadSimple.svg'
+import linkIcon from '../../assets/Link.svg'
 import { Loading } from '../Loading'
 import { RequestBanner } from '../RequestBanner'
 import { DeleteConfirmationDialog } from '../DeleteConfirmationDialog'
@@ -113,7 +114,18 @@ const MyLinks = () => {
 
       <div className='mt-5 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-2 [scrollbar-gutter:stable]'>
         {(isLinksLoading || isLinksFetching) && (
-          <Loading label={MY_LINKS_LOADING_LABEL} />
+          <div className='flex flex-1 items-center justify-center'>
+            <Loading label={MY_LINKS_LOADING_LABEL} />
+          </div>
+        )}
+
+        {!isLinksLoading && !isLinksFetching && links.length === 0 && (
+          <div className='flex flex-1 flex-col items-center justify-center gap-4'>
+            <img src={linkIcon} alt='Link icon' className='h-8 w-8' />
+            <p className='flex h-[18px] w-[284px] items-center justify-center text-center text-[10px] font-normal leading-[14px] uppercase text-[#4D505C]'>
+              Ainda não existem links cadastrados
+            </p>
+          </div>
         )}
 
         {links.map((item) => (

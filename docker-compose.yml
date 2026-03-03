@@ -35,7 +35,6 @@ services:
         condition: service_healthy
     volumes:
       - ./server/src:/app/src
-      - ./server/.env:/app/.env
     networks:
       - brevly-network
     restart: unless-stopped
@@ -48,13 +47,12 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: http://backend:3333
+      VITE_API_URL: http://localhost:3333
     depends_on:
       backend:
         condition: service_healthy
     volumes:
       - ./web/src:/app/src
-      - ./web/.env:/app/.env
     networks:
       - brevly-network
     restart: unless-stopped

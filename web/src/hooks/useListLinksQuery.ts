@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import type { Link } from '../types'
+import { buildApiUrl } from '../utils'
 
 export const useListLinksQuery = () => {
   return useQuery({
     queryKey: ['links'],
     queryFn: async () => {
-      const response = await fetch('/links')
+      const response = await fetch(buildApiUrl('/links'))
 
       const responseData = (await response.json().catch(() => null)) as
         | { message?: string }

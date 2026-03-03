@@ -2,21 +2,31 @@ import { z } from "zod";
 import { existsSync, readFileSync, statSync } from "fs";
 import { resolve } from "path";
 
+const envLocalPath = resolve(process.cwd(), ".env.local");
 const envPath = resolve(process.cwd(), ".env");
 const envExamplePath = resolve(process.cwd(), ".env.example");
 
 // Check if files exist and are files (not directories)
+const envLocalFileExists =
+  existsSync(envLocalPath) && statSync(envLocalPath).isFile();
 const envFileExists = existsSync(envPath) && statSync(envPath).isFile();
 const envExampleFileExists =
   existsSync(envExamplePath) && statSync(envExamplePath).isFile();
 
-const fileToLoad = envFileExists ? envPath : envExamplePath;
+// Priority: .env.local > .env > .env.example
+const fileToLoad = envLocalFileExists
+  ? envLocalPath
+  : envFileExists
+    ? envPath
+    : envExamplePath;
 
-if (!envFileExists && envExampleFileExists) {
+if (envLocalFileExists) {
+  console.log("📋 Using environment variables from .env.local");
+} else if (!envFileExists && envExampleFileExists) {
   console.log("📋 Using environment variables from .env.example");
 }
 
-if (envFileExists || envExampleFileExists) {
+if (envLocalFileExists || envFileExists || envExampleFileExists) {
   const envContent = readFileSync(fileToLoad, "utf-8");
   envContent.split("\n").forEach((line) => {
     const trimmedLine = line.trim();

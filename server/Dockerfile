@@ -18,8 +18,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and netcat for database wait
+RUN apk add --no-cache curl netcat-openbsd
 
 # Install all dependencies (including dev for tsx)
 COPY package*.json ./

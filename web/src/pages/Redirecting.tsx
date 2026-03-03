@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { buildApiUrl } from '../utils'
 
 import {
   REDIRECTING_DESCRIPTION,
@@ -23,7 +24,9 @@ const Redirecting = () => {
     queryKey: ['original-url', shortUrl],
     queryFn: async () => {
       const response = await fetch(
-        `/links/original-url?shortUrl=${encodeURIComponent(shortUrl)}`
+        buildApiUrl(
+          `/links/original-url?shortUrl=${encodeURIComponent(shortUrl)}`
+        )
       )
 
       if (!response.ok) {
@@ -44,7 +47,7 @@ const Redirecting = () => {
 
     const timeout = setTimeout(async () => {
       try {
-        await fetch(`/links/${data.id}/access`, {
+        await fetch(buildApiUrl(`/links/${data.id}/access`), {
           method: 'PATCH',
         })
       } catch {
